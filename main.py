@@ -1,37 +1,76 @@
-
-## main.py
-```python
 import heapq
 from collections import deque
 
 
 def route_planner(graph, start, goal, weighted):
-    """
-    Plan a route between start and goal.
+    # if start or goal not in graph → fail early
+    if start not in graph or goal not in graph:
+        return [], None
 
-    If weighted is False:
-        - graph: dict node -> list of neighbor nodes (unweighted).
-        - Use BFS to find a path with the fewest edges.
-        - Return (path, steps) where steps = number of edges.
+    # Case 1: BFS for unweighted graph
+    if not weighted:
+        return bfs_path(graph, start, goal)
 
-    If weighted is True:
-        - graph: dict node -> list of (neighbor, weight) pairs (positive weights).
-        - Use Dijkstra to find a path with the smallest total weight.
-        - Return (path, total_cost).
-
-    In both cases:
-        - If start or goal not in graph, or no path exists, return ([], None).
-    """
-    # TODO Step 1–3: Understand the two modes and write down inputs/outputs.
-    # TODO Step 4: Plan how to choose BFS or Dijkstra based on the `weighted` flag.
-    # TODO Step 5: Write pseudocode for the BFS branch and the Dijkstra branch.
-    # TODO Step 6: Implement helper functions (if you wish) and call them here.
-    # TODO Step 7: Test both unweighted and weighted graphs, including no-path cases.
-    # TODO Step 8: Reflect why BFS is used for unweighted and Dijkstra for weighted.
-
-    raise NotImplementedError("route_planner is not implemented yet")
+    # Case 2: Dijkstra for weighted graph
+    return dijkstra_path(graph, start, goal)
 
 
-if __name__ == "__main__":
-    # Optional manual tests can go here
-    pass
+def bfs_path(graph, start, goal):
+    if start == goal:
+        return [start], 0
+
+    queue = deque([start])
+    visited = {start: None}  # store parent for reconstruction
+
+    while queue:
+        node = queue.popleft()
+
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                visited[neighbor] = node
+                queue.append(neighbor)
+
+                if neighbor == goal:
+                    return build_path(visited, start, goal)
+
+    return [], None  # no path
+
+
+def dijkstra_path(graph, start, goal):
+    if start == goal:
+        return [start], 0
+
+    pq = [(0, start)]  # (cost, node)
+    visited_cost = {start: 0}
+    parent = {start: None}
+
+    while pq:
+        cost, node = heapq.heappop(pq)
+
+        if node == goal:
+            return build_path(parent, start, goal, cost)
+
+        for neighbor, weight in graph.get(node, []):
+            new_cost = cost + weight
+            if neighbor not in visited_cost or new_cost < visited_cost[neighbor]:
+                visited_cost[neighbor] = new_cost
+                parent[neighbor] = node
+                heapq.heappush(pq, (new_cost, neighbor))
+
+    return [], None  # no path found
+
+
+def build_path(parent, start, goal, cost=None):
+    # Reconstruct path backwards
+    path = []
+    node = goal
+    while node is not None:
+        path.append(node)
+        node = parent[node]
+    path.reverse()
+
+    # Determine cost if BFS path
+    if cost is None:
+        cost = len(path) - 1
+
+    return path, cost
